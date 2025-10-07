@@ -37,7 +37,7 @@ class TimesFM_2p5_200M_torch_module(nn.Module):
 
   config = timesfm_2p5_base.TimesFM_2p5_200M_Definition()
 
-  def __init__(self):
+  def __init__(self, device=None):
     super().__init__()
 
     # Names constants.
@@ -68,7 +68,9 @@ class TimesFM_2p5_200M_torch_module(nn.Module):
     )
 
     # Device.
-    if torch.cuda.is_available():
+    if device != None:
+      self.device = device
+    elif torch.cuda.is_available():
       self.device = torch.device("cuda:0")
       self.device_count = torch.cuda.device_count()
     else:
@@ -266,6 +268,7 @@ class TimesFM_2p5_200M_torch(timesfm_2p5_base.TimesFM_2p5, ModelHubMixin):
   """PyTorch implementation of TimesFM 2.5 with 200M parameters."""
 
   model: nn.Module = TimesFM_2p5_200M_torch_module()
+    
 
   @classmethod
   def _from_pretrained(
@@ -313,6 +316,13 @@ class TimesFM_2p5_200M_torch(timesfm_2p5_base.TimesFM_2p5, ModelHubMixin):
     logging.info("Loading checkpoint from: %s", model_file_path)
     # Load the weights into the model.
     instance.model.load_checkpoint(model_file_path, **model_kwargs)
+    
+    # Move model to the correct device if specified in model_kwargs
+    if "device" in model_kwargs:
+      target_device = model_kwargs["device"]
+      instance.model.to(target_device)
+      instance.model.device = target_device
+
     return instance
 
   def _save_pretrained(self, save_directory: Union[str, Path]):
